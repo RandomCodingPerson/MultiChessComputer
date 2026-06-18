@@ -11,33 +11,24 @@ public class Main {
 
     public static void main(String[] args) {
 
-        Scanner scanner = new Scanner(System.in);
+        Scanner sc = new Scanner(System.in);
         Board board = new Board();
 
-        ArrayList<String> moveHistory = new ArrayList<>();
+        ArrayList<String> history = new ArrayList<>();
 
-        String lastMovePlayed = "";
-        int moveNumber = 1;
+        String last = "";
+        int moveNum = 1;
 
         // startup
         ConsoleUtils.clearScreen();
         ConsoleUtils.printWelcomeHeader();
         ConsoleUtils.printGameBoard(board);
-        ConsoleUtils.printGameStatus(board, lastMovePlayed, moveNumber);
+        ConsoleUtils.printGameStatus(board, last, moveNum);
 
         while (true) {
 
-            // endgame
-
             if (MoveGenerator.isInCheckmate(board)) {
-
-                String winner;
-
-                if (board.whiteToMove)
-                    winner = "Black";
-                else
-                    winner = "White";
-
+                String winner = board.whiteToMove ? "Black" : "White";
                 System.out.println("CHECKMATE. " + winner + " wins!");
                 break;
             }
@@ -47,82 +38,72 @@ public class Main {
                 break;
             }
 
-            String currentInput = ConsoleUtils.getPlayerInput(scanner);
-            String command = currentInput.toLowerCase();
 
-            if (command.equals("quit")) {
+            String input = ConsoleUtils.getPlayerInput(sc);
+            String cmd = input.toLowerCase();
+
+            if (cmd.equals("quit")) {
                 System.out.println("Quit game. Thanks for playing!");
                 break;
             }
 
-            if (command.equals("help")) {
+            if (cmd.equals("help")) {
                 ConsoleUtils.printHelp();
                 continue;
             }
 
-            if (command.equals("moves")) {
+            if (cmd.equals("moves")) {
                 ConsoleUtils.printAvailableMoves(board);
                 continue;
             }
 
-            if (command.equals("eval")) {
+            if (cmd.equals("eval")) {
                 ConsoleUtils.printEvaluationSummary(board);
                 continue;
             }
 
-            if (command.equals("history")) {
+            if (cmd.equals("history")) {
 
-                if (moveHistory.size() == 0) {
+                if (history.size() == 0) {
                     System.out.println("No moves yet.");
                 } else {
 
-                    String historyText = "";
+                    String text = "";
 
-                    for (String move : moveHistory) {
-                        historyText += move + " ";
-                    }
+                    for (String m : history)
+                        text += m + " ";
 
-                    System.out.println("Move history: " + historyText);
+                    System.out.println("Move history: " + text);
                 }
 
                 continue;
             }
 
-            if (command.equals("print")) {
+            if (cmd.equals("print")) {
 
                 ConsoleUtils.clearScreen();
-
                 ConsoleUtils.printGameBoard(board);
-                ConsoleUtils.printGameStatus(board, lastMovePlayed, moveNumber);
+                ConsoleUtils.printGameStatus(board, last, moveNum);
 
                 continue;
             }
 
-            if (command.equals("ai")) {
+
+            if (cmd.equals("ai")) {
 
                 System.out.println("AI is thinking...");
 
-                String computerMove = Searcher.findBestMove(board, 4);
+                String ai = Searcher.findBestMove(board, 4);
 
-                if (computerMove != null) {
+                if (ai != null && board.makeMove(ai)) {
 
-                    boolean moveWorked = board.makeMove(computerMove);
+                    history.add(ai);
+                    last = ai;
+                    moveNum++;
 
-                    if (moveWorked) {
-
-                        moveHistory.add(computerMove);
-
-                        lastMovePlayed = computerMove;
-                        moveNumber++;
-
-                        ConsoleUtils.clearScreen();
-
-                        ConsoleUtils.printGameBoard(board);
-                        ConsoleUtils.printGameStatus(board, lastMovePlayed, moveNumber);
-
-                    } else {
-                        System.out.println("AI could not find a legal move.");
-                    }
+                    ConsoleUtils.clearScreen();
+                    ConsoleUtils.printGameBoard(board);
+                    ConsoleUtils.printGameStatus(board, last, moveNum);
 
                 } else {
                     System.out.println("AI could not find a legal move.");
@@ -131,111 +112,78 @@ public class Main {
                 continue;
             }
 
-            String moveToPlay = null;
 
-            if (board.isPseudoLegal(currentInput)) {
+            String move = null;
 
-                moveToPlay = currentInput;
+            if (board.isPseudoLegal(input)) {
+
+                move = input;
 
             } else {
 
-                String convertedMove = ChessNotationParser.parseNotationToUCI(currentInput, board);
+                String parsed = ChessNotationParser.parseNotationToUCI(input, board);
 
-                if (convertedMove != null) {
-
-                    if (board.isPseudoLegal(convertedMove)) {
-                        moveToPlay = convertedMove;
-                    }
-
-                }
+                if (parsed != null && board.isPseudoLegal(parsed))
+                    move = parsed;
             }
 
-            if (moveToPlay == null) {
+
+            if (move == null) {
 
                 System.out.println("Invalid move. Use chess notation (e4, Nf3, O-O) or UCI format (e2e4).\n");
 
                 ConsoleUtils.printAvailableMoves(board);
-
                 continue;
             }
 
-            boolean moveWasSuccessful = board.makeMove(moveToPlay);
 
-            if (!moveWasSuccessful) {
+            if (!board.makeMove(move)) {
 
                 System.out.println("Move is illegal in the current position.\n");
 
                 ConsoleUtils.printAvailableMoves(board);
-
                 continue;
             }
 
-            moveHistory.add(moveToPlay);
 
-            lastMovePlayed = moveToPlay;
-
-            moveNumber++;
+            history.add(move);
+            last = move;
+            moveNum++;
 
             // redraw
             ConsoleUtils.clearScreen();
-
             ConsoleUtils.printGameBoard(board);
-            ConsoleUtils.printGameStatus(board, lastMovePlayed, moveNumber);
+            ConsoleUtils.printGameStatus(board, last, moveNum);
 
-            // System.out.println(board.currentHash);
-            // System.out.println("move played = " + moveToPlay);
 
             if (!board.whiteToMove) {
 
                 if (MoveGenerator.isInCheckmate(board)) {
-
-                    String winner;
-
-                    if (board.whiteToMove)
-                        winner = "Black";
-                    else
-                        winner = "White";
-
-                    System.out.println("\nCHECKMATE. " + winner + " wins!");
-
+                    System.out.println("\nCHECKMATE. White wins!");
                     break;
                 }
 
                 if (MoveGenerator.isInStalemate(board)) {
-
                     System.out.println("\nSTALEMATE. The game is a draw.");
-
                     break;
                 }
 
                 System.out.println("\nAI is thinking...");
 
-                String aiMove = Searcher.findBestMove(board, 4);
+                String aiMove = Searcher.findBestMove(board, 5);
 
-                if (aiMove != null) {
+                if (aiMove != null && board.makeMove(aiMove)) {
 
-                    boolean worked = board.makeMove(aiMove);
+                    history.add(aiMove);
 
-                    if (worked) {
+                    last = aiMove;
+                    moveNum++;
 
-                        moveHistory.add(aiMove);
+                    ConsoleUtils.clearScreen();
+                    ConsoleUtils.printGameBoard(board);
+                    ConsoleUtils.printGameStatus(board, last, moveNum);
 
-                        lastMovePlayed = aiMove;
-
-                        moveNumber++;
-
-                        ConsoleUtils.clearScreen();
-
-                        ConsoleUtils.printGameBoard(board);
-                        ConsoleUtils.printGameStatus(board, lastMovePlayed, moveNumber);
-
-                        System.out.println("AI played: " + aiMove);
-
-                    } else {
-
-                        System.out.println("Could not find a legal move.");
-
-                    }
+                    System.out.println("AI played: " + aiMove);
 
                 } else {
 
@@ -243,13 +191,11 @@ public class Main {
 
                 }
 
-                // old ai stuff
-                // String testMove = Searcher.findBestMove(board, 3);
-                // System.out.println(testMove);
+                // old testing
+                // System.out.println(Searcher.findBestMove(board, 3));
             }
         }
 
-        // cleanup
-        scanner.close();
+        sc.close();
     }
 }

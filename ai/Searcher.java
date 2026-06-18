@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.ArrayList;
 
 public class Searcher {
-
     private static TranspositionTable tt = new TranspositionTable(20);
     private static final int INF = 20_000_000;
 
@@ -16,7 +15,7 @@ public class Searcher {
         String bestMove = null;
 
         for (int depth = 1; depth <= maxDepth; depth++) {
-            int alpha = -INF;
+           int alpha = -INF;
             int beta = INF;
             List<String> moves = MoveGenerator.generatePseudoLegalMoves(board);
             if (moves.isEmpty()) break;
@@ -28,7 +27,7 @@ public class Searcher {
                 Board next = dupBoard(board);
                 if (!next.makeMove(mv)) continue;
                 int score = search(next, depth - 1, alpha, beta);
-                if (board.whiteToMove) {
+               if (board.whiteToMove) {
                     if (score > bestScore) { bestScore = score; bestSoFar = mv; }
                     alpha = Math.max(alpha, score);
                 } else {
@@ -96,9 +95,10 @@ public class Searcher {
         }
     }
 
+
     private static int quiesce(Board board, int alpha, int beta) {
         int standPat = Evaluator.evaluate(board);
-        if (board.whiteToMove) {
+          if (board.whiteToMove) {
             if (standPat >= beta) return standPat;
             if (standPat > alpha) alpha = standPat;
         } else {
@@ -121,14 +121,15 @@ public class Searcher {
             return best;
         } else {
             int best = standPat;
+
             for (String mv : caps) {
-                Board next = dupBoard(board);
+                    Board next = dupBoard(board);
                 if (!next.makeMove(mv)) continue;
                 int score = quiesce(next, alpha, beta);
                 best = Math.min(best, score);
                 beta = Math.min(beta, score);
                 if (beta <= alpha) return best;
-            }
+             }
             return best;
         }
     }
@@ -149,9 +150,9 @@ public class Searcher {
     }
 
     private static int mvvLva(String mv, Board board) {
-        int from = (mv.charAt(0) - 'a') + (mv.charAt(1) - '1') * 8;
-        int to = (mv.charAt(2) - 'a') + (mv.charAt(3) - '1') * 8;
-        return Evaluator.getPieceValue(to, board) * 10 - Evaluator.getPieceValue(from, board);
+    int from = (mv.charAt(0) - 'a') + (mv.charAt(1) - '1') * 8;
+    int to = (mv.charAt(2) - 'a') + (mv.charAt(3) - '1') * 8;
+    return Evaluator.getPieceValue(to, board) * 10 - Evaluator.getPieceValue(from, board);
     }
 
     private static Board dupBoard(Board src) {
@@ -161,6 +162,7 @@ public class Searcher {
         dst.blackPieces = src.blackPieces;
         dst.allPieces = src.allPieces;
         dst.whiteToMove = src.whiteToMove;
+
         dst.currentHash = src.currentHash;
         dst.castlingRights = src.castlingRights;
         dst.enPassantSquare = src.enPassantSquare;

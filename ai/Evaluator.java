@@ -2,63 +2,63 @@ package ai;
 
 import engine.Board;
 import engine.MoveGenerator;
-import engine.Move;
 
 public class Evaluator {
 
-    static final int PAWN_VAL = 100;
-    static final int KNIGHT_VAL = 320;
-    static final int BISHOP_VAL = 330;  // 330 not 320, bishops slightly edge out knights
-    static final int ROOK_VAL = 500;
-    static final int QUEEN_VAL = 900;
-    static final int KING_VAL = 20000;
+    static final int pawnVal = 100;
+    static final int knightVal = 320;
+    static final int bishopVal = 330; // maybe? slightly better
+    static final int rookVal = 500;
+    static final int queenVal = 900;
+    static final int kingVal = 20000;
 
-    private static final int MOB_WEIGHT = 8;
-    private static final int DOUBLED_PEN = 25;
-    private static final int ISO_PEN = 20;
-    private static final int PASSED_BONUS = 40;
+    private static final int mobWeight = 8;
+    private static final int doubledPen = 25;
+    private static final int isoPen = 20;
+    private static final int passedBonus = 40;
 
-    private static final int[] PAWN_TABLE = {
-        0, 0, 0, 0, 0, 0, 0, 0,
-        50, 50, 50, 50, 50, 50, 50, 50,
-        10, 10, 20, 30, 30, 20, 10, 10,
-        5, 5, 10, 25, 25, 10, 5, 5,
-        0, 0, 0, 20, 20, 0, 0, 0,
-        5, -5, -10, 0, 0, -10, -5, 5,
-        5, 10, 10, -20, -20, 10, 10, 5,
-        0, 0, 0, 0, 0, 0, 0, 0
+    private static final int[] pawnTable = {
+        0,0,0,0,0,0,0,0,
+        50,50,50,50,50,50,50,50,
+        10,10,20,30,30,20,10,10,
+        5,5,10,25,25,10,5,5,
+        0,0,0,20,20,0,0,0,
+        5,-5,-10,0,0,-10,-5,5,
+        5,10,10,-20,-20,10,10,5,
+        0,0,0,0,0,0,0,0
     };
-
-    private static final int[] KNIGHT_TABLE = {
-        -50, -40, -30, -30, -30, -30, -40, -50,
-        -40, -20, 0, 0, 0, 0, -20, -40,
-        -30, 0, 10, 15, 15, 10, 0, -30,
-        -30, 5, 15, 20, 20, 15, 5, -30,
-        -30, 0, 15, 20, 20, 15, 0, -30,
-        -30, 5, 10, 15, 15, 10, 5, -30,
-        -40, -20, 0, 5, 5, 0, -20, -40,
-        -50, -40, -30, -30, -30, -30, -40, -50
+    private static final int[] knightTable = {
+        -50,-40,-30,-30,-30,-30,-40,-50,
+        -40,-20,0,0,0,0,-20,-40,
+        -30,0,10,15,15,10,0,-30,
+        -30,5,15,20,20,15,5,-30,
+        -30,0,15,20,20,15,0,-30,
+        -30,5,10,15,15,10,5,-30,
+        -40,-20,0,5,5,0,-20,-40,
+        -50,-40,-30,-30,-30,-30,-40,-50
     };
-
-    private static final int[] BISHOP_TABLE = {
+    private static final int[] bishopTable = {
         -20,-10,-10,-10,-10,-10,-10,-20,
-        -10,  0,  0,  0,  0,  0,  0,-10,
-        -10,  0,  5, 10, 10,  5,  0,-10,
-        -10,  5,  5, 10, 10,  5,  5,-10,
-        -10,  0, 10, 10, 10, 10,  0,-10,
-        -10, 10, 10, 10, 10, 10, 10,-10,
-        -10,  5,  0,  0,  0,  0,  5,-10,
+        -10,0,0,0,0,0,0,-10,
+        -10,0,5,10,10,5,0,-10,
+        -10,5,5,10,10,5,5,-10,
+        -10,0,10,10,10,10,0,-10,
+        -10,10,10,10,10,10,10,-10,
+        -10,5,0,0,0,0,5,-10,
         -20,-10,-10,-10,-10,-10,-10,-20
     };
-
-    private static final int[] ROOK_TBL = {
-        0,0,5,10,10,5,0,0, 0,0,5,10,10,5,0,0,
-        0,0,5,10,10,5,0,0, 0,0,5,10,10,5,0,0,
-        0,0,5,10,10,5,0,0, 0,0,5,10,10,5,0,0,
-        0,0,5,10,10,5,0,0, 0,0,5,10,10,5,0,0
+    private static final int[] rookTable = {
+        0,0,5,10,10,5,0,0,
+        0,0,5,10,10,5,0,0,
+        0,0,5,10,10,5,0,0,
+        0,0,5,10,10,5,0,0,
+        0,0,5,10,10,5,0,0,
+        0,0,5,10,10,5,0,0,
+        0,0,5,10,10,5,0,0,
+        0,0,5,10,10,5,0,0
     };
 
-    private static final int[] QUEEN_TBL = {
+    private static final int[] queenTable = {
         -10,-5,0,5,5,0,-5,-10,
         -5,0,5,10,10,5,0,-5,
         0,5,10,15,15,10,5,0,
@@ -68,155 +68,191 @@ public class Evaluator {
         -5,0,5,10,10,5,0,-5,
         -10,-5,0,5,5,0,-5,-10
     };
-
-    private static final int[] KING_MG = {
+    private static final int[] kingMid = {
         -30,-40,-40,-50,-50,-40,-40,-30,
         -30,-40,-40,-50,-50,-40,-40,-30,
         -30,-40,-40,-50,-50,-40,-40,-30,
         -30,-40,-40,-50,-50,-40,-40,-30,
         -20,-30,-30,-40,-40,-30,-30,-20,
         -10,-20,-20,-20,-20,-20,-20,-10,
-        20, 20,  0,  0,  0,  0, 20, 20,
-        20, 30, 10,  0,  0, 10, 30, 20
+        20,20,0,0,0,0,20,20,
+        20,30,10,0,0,10,30,20
     };
-
-    private static final int[] KING_EG = {
+    private static final int[] kingEnd = {
         -50,-30,-30,-30,-30,-30,-30,-50,
-        -30,-10,  0,  0,  0,  0,-10,-30,
-        -30,  0, 20, 30, 30, 20,  0,-30,
-        -30,  0, 30, 40, 40, 30,  0,-30,
-        -30,  0, 30, 40, 40, 30,  0,-30,
-        -30,  0, 20, 30, 30, 20,  0,-30,
-        -30,-10,  0,  0,  0,  0,-10,-30,
+        -30,-10,0,0,0,0,-10,-30,
+        -30,0,20,30,30,20,0,-30,
+        -30,0,30,40,40,30,0,-30,
+        -30,0,30,40,40,30,0,-30,
+        -30,0,20,30,30,20,0,-30,
+        -30,-10,0,0,0,0,-10,-30,
         -50,-30,-30,-30,-30,-30,-30,-50
     };
+    public static int evaluate(Board b) {
+        int mid = 0;
+        int end = 0;
 
-    public static int evaluate(Board board) {
-        int mg = 0;
-        int eg = 0;
+        mid += tallyPieces(b.pieceBitboards[Board.WP], pawnVal, pawnTable, true);
+        mid += tallyPieces(b.pieceBitboards[Board.WN], knightVal, knightTable, true);
+        mid += tallyPieces(b.pieceBitboards[Board.WB], bishopVal, bishopTable, true);
+        mid += tallyPieces(b.pieceBitboards[Board.WR], rookVal, rookTable, true);
+        mid += tallyPieces(b.pieceBitboards[Board.WQ], queenVal, queenTable, true);
+        mid -= tallyPieces(b.pieceBitboards[Board.BP], pawnVal, pawnTable, false);
+        mid -= tallyPieces(b.pieceBitboards[Board.BN], knightVal, knightTable, false);
+        mid -= tallyPieces(b.pieceBitboards[Board.BB], bishopVal, bishopTable, false);
+        mid -= tallyPieces(b.pieceBitboards[Board.BR], rookVal, rookTable, false);
+        mid -= tallyPieces(b.pieceBitboards[Board.BQ], queenVal, queenTable, false);
 
-        mg += tallyPieces(board.pieceBitboards[Board.WP], PAWN_VAL, PAWN_TABLE, true);
-        mg += tallyPieces(board.pieceBitboards[Board.WN], KNIGHT_VAL, KNIGHT_TABLE, true);
-        mg += tallyPieces(board.pieceBitboards[Board.WB], BISHOP_VAL, BISHOP_TABLE, true);
-        mg += tallyPieces(board.pieceBitboards[Board.WR], ROOK_VAL, ROOK_TBL, true);
-        mg += tallyPieces(board.pieceBitboards[Board.WQ], QUEEN_VAL, QUEEN_TBL, true);
+        end += tallyPieces(b.pieceBitboards[Board.WP], pawnVal, pawnTable, true);
+        end += tallyPieces(b.pieceBitboards[Board.WN], knightVal, knightTable, true);
+        end += tallyPieces(b.pieceBitboards[Board.WB], bishopVal, bishopTable, true);
 
-        eg += tallyPieces(board.pieceBitboards[Board.WP], PAWN_VAL, PAWN_TABLE, true);
-        eg += tallyPieces(board.pieceBitboards[Board.WN], KNIGHT_VAL, KNIGHT_TABLE, true);
-        eg += tallyPieces(board.pieceBitboards[Board.WB], BISHOP_VAL, BISHOP_TABLE, true);
-        eg += tallyPieces(board.pieceBitboards[Board.WR], ROOK_VAL, ROOK_TBL, true);
-        eg += tallyPieces(board.pieceBitboards[Board.WQ], QUEEN_VAL, QUEEN_TBL, true);
+        // probably should split this better but it works
+                end += tallyPieces(b.pieceBitboards[Board.WR], rookVal, rookTable, true);
+        end += tallyPieces(b.pieceBitboards[Board.WQ], queenVal, queenTable, true);
 
-        mg -= tallyPieces(board.pieceBitboards[Board.BP], PAWN_VAL, PAWN_TABLE, false);
-        mg -= tallyPieces(board.pieceBitboards[Board.BN], KNIGHT_VAL, KNIGHT_TABLE, false);
-        mg -= tallyPieces(board.pieceBitboards[Board.BB], BISHOP_VAL, BISHOP_TABLE, false);
-        mg -= tallyPieces(board.pieceBitboards[Board.BR], ROOK_VAL, ROOK_TBL, false);
-        mg -= tallyPieces(board.pieceBitboards[Board.BQ], QUEEN_VAL, QUEEN_TBL, false);
+        end -= tallyPieces(b.pieceBitboards[Board.BP], pawnVal, pawnTable, false);
+        end -= tallyPieces(b.pieceBitboards[Board.BN], knightVal, knightTable, false);
+        end -= tallyPieces(b.pieceBitboards[Board.BB], bishopVal, bishopTable, false);
+        end -= tallyPieces(b.pieceBitboards[Board.BR], rookVal, rookTable, false);
+        end -= tallyPieces(b.pieceBitboards[Board.BQ], queenVal, queenTable, false);
 
-        eg -= tallyPieces(board.pieceBitboards[Board.BP], PAWN_VAL, PAWN_TABLE, false);
-        eg -= tallyPieces(board.pieceBitboards[Board.BN], KNIGHT_VAL, KNIGHT_TABLE, false);
-        eg -= tallyPieces(board.pieceBitboards[Board.BB], BISHOP_VAL, BISHOP_TABLE, false);
-        eg -= tallyPieces(board.pieceBitboards[Board.BR], ROOK_VAL, ROOK_TBL, false);
-        eg -= tallyPieces(board.pieceBitboards[Board.BQ], QUEEN_VAL, QUEEN_TBL, false);
 
-        int matLeft =
-            Long.bitCount(board.pieceBitboards[Board.WN] | board.pieceBitboards[Board.BN]) +
-            Long.bitCount(board.pieceBitboards[Board.WB] | board.pieceBitboards[Board.BB]) +
-            Long.bitCount(board.pieceBitboards[Board.WR] | board.pieceBitboards[Board.BR]) * 2 +
-            Long.bitCount(board.pieceBitboards[Board.WQ] | board.pieceBitboards[Board.BQ]) * 4;
-        int maxPhase = 24;
-        int phase = Math.min(matLeft, maxPhase);
+        int pieces = 
+            Long.bitCount(b.pieceBitboards[Board.WN] | b.pieceBitboards[Board.BN]) +
+            Long.bitCount(b.pieceBitboards[Board.WB] | b.pieceBitboards[Board.BB]) +
+            Long.bitCount(b.pieceBitboards[Board.WR] | b.pieceBitboards[Board.BR]) * 2 +
+            Long.bitCount(b.pieceBitboards[Board.WQ] | b.pieceBitboards[Board.BQ]) * 4;
 
-        long wk = board.pieceBitboards[Board.WK];
-        long bk = board.pieceBitboards[Board.BK];
-        if (wk != 0) {
-            int s = Long.numberOfTrailingZeros(wk);
-            mg += KING_MG[s];
-            eg += KING_EG[s];
+        int max = 24;
+        int phase = Math.min(pieces, max);
+        long wk = b.pieceBitboards[Board.WK];
+        long bk = b.pieceBitboards[Board.BK];
+        if(wk != 0) {
+                int sq = Long.numberOfTrailingZeros(wk);
+                mid += kingMid[sq];
+                end += kingEnd[sq];
         }
-        if (bk != 0) {
-            int s = Long.numberOfTrailingZeros(bk);
-            mg -= KING_MG[s ^ 56];
-            eg -= KING_EG[s ^ 56];
-        }
-
-        boolean side = board.whiteToMove;
-        board.whiteToMove = true;
-        int whiteMob = MoveGenerator.generatePseudoLegalMoves(board).size();
-        board.whiteToMove = false;
-        int blackMob = MoveGenerator.generatePseudoLegalMoves(board).size();
-        board.whiteToMove = side;
-        mg += MOB_WEIGHT * (whiteMob - blackMob);
-
-        long wp = board.pieceBitboards[Board.WP];
-        long bp = board.pieceBitboards[Board.BP];
-
-        for (int f = 0; f < 8; f++) {
-            long fmask = 0x0101010101010101L << f;
-            int wc = Long.bitCount(wp & fmask);
-            int bc = Long.bitCount(bp & fmask);
-            if (wc > 1) mg -= DOUBLED_PEN * (wc - 1);
-            if (bc > 1) mg += DOUBLED_PEN * (bc - 1);
-            long adj = (f > 0 ? fmask >> 1 : 0L) | (f < 7 ? fmask << 1 : 0L);
-            if (wc > 0 && (wp & adj) == 0) mg -= ISO_PEN * wc;
-            if (bc > 0 && (bp & adj) == 0) mg += ISO_PEN * bc;
+        if(bk != 0) {
+            int sq = Long.numberOfTrailingZeros(bk);
+            mid -= kingMid[sq ^ 56];
+            end -= kingEnd[sq ^ 56];
         }
 
+        boolean save = b.whiteToMove;
+
+        b.whiteToMove = true;
+        int whiteMoves = MoveGenerator.generatePseudoLegalMoves(b).size();
+        b.whiteToMove = false;
+        int blackMoves = MoveGenerator.generatePseudoLegalMoves(b).size();
+
+        b.whiteToMove = save;
+        mid += mobWeight * (whiteMoves - blackMoves);
+
+
+        long wp = b.pieceBitboards[Board.WP];
+        long bp = b.pieceBitboards[Board.BP];
+        for(int file = 0; file < 8; file++) {
+            long mask = 0x0101010101010101L << file;
+            int w = Long.bitCount(wp & mask);
+            int bl = Long.bitCount(bp & mask);
+
+            if(w > 1)
+                mid -= doubledPen * (w - 1);
+
+            if(bl > 1)
+                mid += doubledPen * (bl - 1);
+            long near = (file > 0 ? mask >> 1 : 0) |
+                        (file < 7 ? mask << 1 : 0);
+
+            if(w > 0 && (wp & near) == 0)
+                mid -= isoPen * w;
+
+            if(bl > 0 && (bp & near) == 0)
+                mid += isoPen * bl;
+        }
         // passed pawns
-        long bb = wp;
-        while (bb != 0) {
-            int sq = Long.numberOfTrailingZeros(bb);
-            int f = sq % 8, r = sq / 8;
-            long fwd = 0L;
-            for (int rr = r + 1; rr < 8; rr++)
-                for (int ff = Math.max(0, f-1); ff <= Math.min(7, f+1); ff++)
-                    fwd |= 1L << (rr * 8 + ff);
-            if ((bp & fwd) == 0) mg += PASSED_BONUS;
-            bb &= bb - 1;
-        }
-        bb = bp;
-        while (bb != 0) {
-            int sq = Long.numberOfTrailingZeros(bb);
-            int f = sq % 8, r = sq / 8;
-            long fwd = 0L;
-            for (int rr = r - 1; rr >= 0; rr--)
-                for (int ff = Math.max(0, f-1); ff <= Math.min(7, f+1); ff++)
-                    fwd |= 1L << (rr * 8 + ff);
-            if ((wp & fwd) == 0) mg -= PASSED_BONUS;
-            bb &= bb - 1;
-        }
+        long pawns = wp;
 
-        // TODO: bishop pair bonus
+        while(pawns != 0) {
+   int sq = Long.numberOfTrailingZeros(pawns);
 
-        return ((mg * phase) + (eg * (maxPhase - phase))) / maxPhase;
+            int file = sq % 8;
+            int rank = sq / 8;
+
+            long ahead = 0;
+
+            for(int r = rank + 1; r < 8; r++) {
+                for(int f = Math.max(0,file-1); f <= Math.min(7,file+1); f++) {
+                    ahead |= 1L << (r * 8 + f);
+                }
+            }
+
+            if((bp & ahead) == 0)
+                mid += passedBonus;
+
+            pawns &= pawns - 1;
+        }
+        pawns = bp;
+
+        while(pawns != 0) {
+
+            int sq = Long.numberOfTrailingZeros(pawns);
+
+            int file = sq % 8;
+            int rank = sq / 8;
+
+            long ahead = 0;
+
+            for(int r = rank - 1; r >= 0; r--) {
+                for(int f = Math.max(0,file-1); f <= Math.min(7,file+1); f++) {
+                    ahead |= 1L << (r * 8 + f);
+                }
+            }
+
+            if((wp & ahead) == 0)
+                mid -= passedBonus;
+
+            pawns &= pawns - 1;
+        }
+        // TODO bishop pair someday maybe
+
+        return ((mid * phase) + (end * (max - phase))) / max;
     }
 
-    static int tallyPieces(long bits, int base, int[] table, boolean white) {
-        int n = 0;
-        while (bits != 0) {
+    static int tallyPieces(long bits, int val, int[] table, boolean white) {
+        int total = 0;
+        while(bits != 0) {
             int sq = Long.numberOfTrailingZeros(bits);
-            n += base;
-            if (table != null)
-                n += table[white ? sq : sq ^ 56];
+
+            total += val;
+
+            if(table != null)
+                total += table[white ? sq : sq ^ 56];
             bits &= bits - 1;
         }
-        return n;
+
+        return total;
     }
 
-    public static int getPieceValue(int sq, Board board) {
+
+    public static int getPieceValue(int sq, Board b) {
+
         long bit = 1L << sq;
-        if ((board.pieceBitboards[Board.WP] & bit) != 0) return PAWN_VAL;
-        if ((board.pieceBitboards[Board.WN] & bit) != 0) return KNIGHT_VAL;
-        if ((board.pieceBitboards[Board.WB] & bit) != 0) return BISHOP_VAL;
-        if ((board.pieceBitboards[Board.WR] & bit) != 0) return ROOK_VAL;
-        if ((board.pieceBitboards[Board.WQ] & bit) != 0) return QUEEN_VAL;
-        if ((board.pieceBitboards[Board.WK] & bit) != 0) return KING_VAL;
-        if ((board.pieceBitboards[Board.BP] & bit) != 0) return PAWN_VAL;
-        if ((board.pieceBitboards[Board.BN] & bit) != 0) return KNIGHT_VAL;
-        if ((board.pieceBitboards[Board.BB] & bit) != 0) return BISHOP_VAL;
-        if ((board.pieceBitboards[Board.BR] & bit) != 0) return ROOK_VAL;
-        if ((board.pieceBitboards[Board.BQ] & bit) != 0) return QUEEN_VAL;
-        if ((board.pieceBitboards[Board.BK] & bit) != 0) return KING_VAL;
+        if((b.pieceBitboards[Board.WP] & bit) != 0) return pawnVal;
+        if((b.pieceBitboards[Board.WN] & bit) != 0) return knightVal;
+        if((b.pieceBitboards[Board.WB] & bit) != 0) return bishopVal;
+        if((b.pieceBitboards[Board.WR] & bit) != 0) return rookVal;
+        if((b.pieceBitboards[Board.WQ] & bit) != 0) return queenVal;
+        if((b.pieceBitboards[Board.WK] & bit) != 0) return kingVal;
+
+        if((b.pieceBitboards[Board.BP] & bit) != 0) return pawnVal;
+        if((b.pieceBitboards[Board.BN] & bit) != 0) return knightVal;
+        if((b.pieceBitboards[Board.BB] & bit) != 0) return bishopVal;
+        if((b.pieceBitboards[Board.BR] & bit) != 0) return rookVal;
+        if((b.pieceBitboards[Board.BQ] & bit) != 0) return queenVal;
+        if((b.pieceBitboards[Board.BK] & bit) != 0) return kingVal;
+
         return 0;
     }
 }
