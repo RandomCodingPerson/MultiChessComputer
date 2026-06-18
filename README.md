@@ -1,3 +1,2 @@
 # multicc
-chess engine# MultiChessComputer
-# MultiChessComputer
+chess engine
